@@ -1,0 +1,337 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>袁氏音樂教室｜學費單</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; background: #f0f4f8; min-height: 100vh; }
+
+  /* ── Header Bar ── */
+  .topbar { background: #3a8fc7; color: white; padding: 14px 20px; display: flex; align-items: center; justify-content: space-between; position: sticky; top: 0; z-index: 100; }
+  .topbar-title { font-size: 16px; font-weight: 600; letter-spacing: 0.03em; }
+  .topbar-clef { font-size: 24px; margin-right: 8px; }
+
+  /* ── Month Selector ── */
+  .controls { background: white; padding: 14px 20px; border-bottom: 1px solid #e0e8f0; display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+  .controls label { font-size: 13px; color: #555; font-weight: 500; }
+  .month-select { border: 1px solid #c5d8e8; border-radius: 8px; padding: 7px 12px; font-size: 14px; color: #2c3e50; background: white; outline: none; }
+  .month-select:focus { border-color: #3a8fc7; }
+  .income-badge { margin-left: auto; background: #e8f4fd; color: #185fa5; border-radius: 8px; padding: 6px 14px; font-size: 13px; font-weight: 600; }
+
+  /* ── Parent List ── */
+  .parent-list { padding: 16px; display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 12px; }
+  .parent-card { background: white; border-radius: 12px; border: 1px solid #dde8f0; padding: 14px 16px; display: flex; justify-content: space-between; align-items: center; box-shadow: 0 1px 4px rgba(58,143,199,0.06); }
+  .parent-info .pname { font-size: 15px; font-weight: 600; color: #1a2a3a; }
+  .parent-info .psub { font-size: 12px; color: #888; margin-top: 3px; }
+  .parent-info .pamount { font-size: 13px; color: #3a8fc7; font-weight: 600; margin-top: 4px; }
+  .gen-btn { background: #3a8fc7; color: white; border: none; border-radius: 8px; padding: 8px 16px; font-size: 13px; font-weight: 500; cursor: pointer; white-space: nowrap; }
+  .gen-btn:hover { background: #2d7ab5; }
+  .gen-btn:active { background: #1e6a9f; transform: scale(0.97); }
+
+  /* ── Invoice View ── */
+  .invoice-view { display: none; padding: 16px; }
+  .invoice-view.active { display: block; }
+  .inv-actions { display: flex; gap: 10px; margin-bottom: 14px; align-items: center; flex-wrap: wrap; }
+  .back-btn { background: white; border: 1px solid #c5d8e8; border-radius: 8px; padding: 8px 16px; font-size: 13px; cursor: pointer; color: #333; }
+  .back-btn:hover { background: #f0f4f8; }
+  .screenshot-btn { background: #3a8fc7; color: white; border: none; border-radius: 8px; padding: 8px 18px; font-size: 13px; font-weight: 500; cursor: pointer; }
+  .screenshot-btn:hover { background: #2d7ab5; }
+  .screenshot-btn:disabled { background: #aaa; cursor: not-allowed; }
+
+  /* ── Invoice Card ── */
+  #invoiceCard { background: white; border-radius: 12px; overflow: hidden; border: 1px solid #dde8f0; max-width: 680px; margin: 0 auto; box-shadow: 0 2px 12px rgba(58,143,199,0.1); }
+  .inv-header { background: #3a8fc7; color: white; padding: 22px 26px; display: flex; justify-content: space-between; align-items: flex-start; }
+  .inv-clef { font-size: 40px; line-height: 1; }
+  .inv-title-block { text-align: right; }
+  .inv-title { font-size: 30px; font-weight: 700; letter-spacing: 0.1em; }
+  .inv-date { font-size: 12px; opacity: 0.85; margin-top: 4px; }
+  .inv-body { padding: 22px 26px; background: white; }
+  .inv-meta { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 22px; }
+  .bill-to label { font-size: 10px; color: #aaa; font-weight: 600; letter-spacing: 0.1em; }
+  .bill-to .bname { font-size: 18px; font-weight: 600; color: #1a2a3a; margin-top: 4px; }
+  .total-due { text-align: right; }
+  .total-due label { font-size: 10px; color: #aaa; font-weight: 600; letter-spacing: 0.1em; }
+  .total-due .amount { font-size: 24px; font-weight: 700; color: #3a8fc7; margin-top: 4px; }
+  .inv-table { width: 100%; border-collapse: collapse; font-size: 13px; }
+  .inv-table thead tr { background: #3a8fc7; }
+  .inv-table thead th { padding: 10px 12px; text-align: left; font-weight: 500; font-size: 11px; letter-spacing: 0.05em; color: white; }
+  .inv-table tbody tr:nth-child(even) { background: #f5f9fd; }
+  .inv-table tbody td { padding: 10px 12px; color: #333; border-bottom: 0.5px solid #eee; font-size: 13px; }
+  .inv-table tbody td.charges { color: #3a8fc7; font-weight: 600; }
+  .inv-table tfoot td { padding: 11px 12px; }
+  .inv-footer { background: #3a8fc7; color: rgba(255,255,255,0.9); text-align: center; padding: 13px; font-size: 12px; letter-spacing: 0.05em; }
+
+  /* ── Mobile ── */
+  @media (max-width: 500px) {
+    .parent-list { grid-template-columns: 1fr; padding: 12px; }
+    .inv-header { padding: 16px 18px; }
+    .inv-clef { font-size: 30px; }
+    .inv-title { font-size: 22px; }
+    .inv-body { padding: 16px 14px; }
+    .inv-table thead th, .inv-table tbody td { padding: 8px 8px; font-size: 12px; }
+    .total-due .amount { font-size: 20px; }
+    .bill-to .bname { font-size: 16px; }
+    #invoiceCard { border-radius: 10px; }
+  }
+</style>
+</head>
+<body>
+
+<div class="topbar">
+  <div style="display:flex; align-items:center;">
+    <span class="topbar-clef">𝄞</span>
+    <span class="topbar-title">袁氏音樂教室</span>
+  </div>
+  <span style="font-size:13px; opacity:0.85;">學費單系統</span>
+</div>
+
+<div class="controls">
+  <label>月份</label>
+  <select class="month-select" id="monthSelect" onchange="renderList()">
+    <option value="2026-1">2026年1月</option>
+    <option value="2026-2">2026年2月</option>
+    <option value="2026-3">2026年3月</option>
+    <option value="2026-4">2026年4月</option>
+    <option value="2026-5" selected>2026年5月</option>
+    <option value="2026-6">2026年6月</option>
+    <option value="2026-7">2026年7月</option>
+    <option value="2026-8">2026年8月</option>
+    <option value="2026-9">2026年9月</option>
+    <option value="2026-10">2026年10月</option>
+    <option value="2026-11">2026年11月</option>
+    <option value="2026-12">2026年12月</option>
+  </select>
+  <div class="income-badge" id="incomeBadge">本月總收入：—</div>
+</div>
+
+<div class="parent-list" id="parentList"></div>
+
+<div class="invoice-view" id="invoiceView">
+  <div class="inv-actions">
+    <button class="back-btn" onclick="showList()">← 返回</button>
+    <button class="screenshot-btn" id="shotBtn" onclick="takeScreenshot()">📷 下載截圖</button>
+  </div>
+  <div id="invoiceCard">
+    <div class="inv-header">
+      <div class="inv-clef">𝄞</div>
+      <div class="inv-title-block">
+        <div class="inv-title">INVOICE</div>
+        <div class="inv-date" id="invDateLabel"></div>
+      </div>
+    </div>
+    <div class="inv-body">
+      <div class="inv-meta">
+        <div class="bill-to">
+          <label>BILL TO</label>
+          <div class="bname" id="invBillTo"></div>
+        </div>
+        <div class="total-due">
+          <label>TOTAL DUE</label>
+          <div class="amount" id="invTotal"></div>
+        </div>
+      </div>
+      <table class="inv-table">
+        <thead>
+          <tr>
+            <th style="width:20%">Date</th>
+            <th>Description</th>
+            <th style="width:15%">Charges</th>
+            <th style="width:13%">Payments</th>
+          </tr>
+        </thead>
+        <tbody id="invRows"></tbody>
+        <tfoot>
+          <tr>
+            <td colspan="2" style="text-align:right; font-weight:500; color:#666;">Total</td>
+            <td style="color:#3a8fc7; font-weight:700;" id="invFootTotal"></td>
+            <td></td>
+          </tr>
+        </tfoot>
+      </table>
+    </div>
+    <div class="inv-footer">袁氏音樂教室 &nbsp;｜&nbsp; Yuan Music Studio</div>
+  </div>
+</div>
+
+<script>
+const parents = [
+  {
+    parentName: '彭喬妤媽媽',
+    maxPerChild: 4,
+    children: [
+      { name: '彭 喬妤', weekday: 6, time: '11:30', duration: 50, fee: 1500 },
+      { name: '彭 舒妤', weekday: 6, time: '12:50', duration: 50, fee: 1500 },
+    ]
+  },
+  {
+    parentName: '杉島安媽媽',
+    children: [
+      { name: '杉島 安', weekday: 4, time: '15:15', duration: 100, fee: 2400 },
+    ]
+  },
+  {
+    parentName: '劉瑞岡媽媽',
+    children: [
+      { name: '劉 旺寶', weekday: 3, time: '13:00', duration: 50, fee: 1000 },
+      { name: '劉 小岡', weekday: 3, time: '14:00', duration: 50, fee: 1000 },
+    ]
+  },
+  {
+    parentName: '黃愛凌媽媽',
+    children: [
+      { name: '黃 愛凌', weekday: 6, time: '16:00', duration: 50, fee: 1200 },
+    ]
+  },
+  {
+    parentName: 'Cheyne媽媽',
+    children: [
+      { name: 'Lin Cheyne', weekday: 5, time: '17:00', duration: 50, fee: 1200 },
+    ]
+  },
+  {
+    parentName: '弈凡媽媽',
+    children: [
+      { name: '林 弈凡', weekday: 3, time: '17:30', duration: 50, fee: 900 },
+      { name: '林 昀潔', weekday: 3, time: '18:30', duration: 50, fee: 900, paused: true },
+    ]
+  },
+  {
+    parentName: '名妤媽媽',
+    children: [
+      { name: '鄭 名妤', weekday: 6, time: '10:30', duration: 50, fee: 800 },
+    ]
+  },
+];
+
+function getDays(year, month, jsWd) {
+  const days = [], d = new Date(year, month - 1, 1);
+  while (d.getMonth() === month - 1) {
+    if (d.getDay() === jsWd) days.push(new Date(d));
+    d.setDate(d.getDate() + 1);
+  }
+  return days;
+}
+
+function formatDate(d) {
+  return `${d.getFullYear()}/${String(d.getMonth()+1).padStart(2,'0')}/${String(d.getDate()).padStart(2,'0')}`;
+}
+
+function getYM() {
+  const val = document.getElementById('monthSelect').value;
+  const [y, m] = val.split('-').map(Number);
+  return { year: y, month: m };
+}
+
+function getMonthLabel() {
+  const { year, month } = getYM();
+  return `${year}年${month}月`;
+}
+
+function calcTotal(p, year, month) {
+  let t = 0;
+  for (const c of p.children) {
+    if (c.paused) continue;
+    let days = getDays(year, month, c.weekday % 7);
+    if (p.maxPerChild) days = days.slice(0, p.maxPerChild);
+    t += days.length * c.fee;
+  }
+  return t;
+}
+
+function buildLines(p, year, month) {
+  const lines = [];
+  for (const c of p.children) {
+    if (c.paused) continue;
+    let days = getDays(year, month, c.weekday % 7);
+    if (p.maxPerChild) days = days.slice(0, p.maxPerChild);
+    for (const d of days) lines.push({ date: formatDate(d), d, child: c });
+  }
+  return lines.sort((a, b) => a.d - b.d);
+}
+
+function renderList() {
+  const { year, month } = getYM();
+  let grand = 0;
+  const list = document.getElementById('parentList');
+  list.innerHTML = '';
+  parents.forEach((p, i) => {
+    const total = calcTotal(p, year, month);
+    grand += total;
+    const active = p.children.filter(c => !c.paused).map(c => c.name.split(' ').pop()).join('、');
+    const paused = p.children.filter(c => c.paused).map(c => c.name.split(' ').pop()).join('、');
+    const sub = active + (paused ? `（暫停：${paused}）` : '');
+    const div = document.createElement('div');
+    div.className = 'parent-card';
+    div.innerHTML = `
+      <div class="parent-info">
+        <div class="pname">${p.parentName}</div>
+        <div class="psub">${sub}</div>
+        <div class="pamount">$${total.toLocaleString()}</div>
+      </div>
+      <button class="gen-btn" onclick="generate(${i})">產生 ↗</button>`;
+    list.appendChild(div);
+  });
+  document.getElementById('incomeBadge').textContent = `本月總收入：$${grand.toLocaleString()}`;
+  document.getElementById('parentList').style.display = 'grid';
+  document.getElementById('invoiceView').className = 'invoice-view';
+}
+
+function generate(idx) {
+  const { year, month } = getYM();
+  const p = parents[idx];
+  const lines = buildLines(p, year, month);
+  const total = calcTotal(p, year, month);
+  const today = new Date();
+  const todayStr = formatDate(today);
+  const label = getMonthLabel();
+
+  document.getElementById('invDateLabel').textContent = `${label}  |  ${todayStr}`;
+  document.getElementById('invBillTo').textContent = p.parentName;
+  document.getElementById('invTotal').textContent = '$' + total.toLocaleString();
+  document.getElementById('invFootTotal').textContent = '$' + total.toLocaleString();
+
+  const tbody = document.getElementById('invRows');
+  tbody.innerHTML = '';
+  for (const ln of lines) {
+    const tr = document.createElement('tr');
+    tr.innerHTML = `<td>${ln.date}</td><td>${ln.child.time} (${ln.child.duration} min) Lesson - ${ln.child.name}</td><td class="charges">$${ln.child.fee.toLocaleString()}</td><td>—</td>`;
+    tbody.appendChild(tr);
+  }
+
+  window._currentParentName = p.parentName;
+  window._currentLabel = label;
+
+  document.getElementById('parentList').style.display = 'none';
+  document.getElementById('invoiceView').className = 'invoice-view active';
+  window.scrollTo(0, 0);
+}
+
+function showList() {
+  document.getElementById('parentList').style.display = 'grid';
+  document.getElementById('invoiceView').className = 'invoice-view';
+  window.scrollTo(0, 0);
+}
+
+function takeScreenshot() {
+  const btn = document.getElementById('shotBtn');
+  btn.disabled = true;
+  btn.textContent = '處理中...';
+  const el = document.getElementById('invoiceCard');
+  html2canvas(el, { scale: 2, backgroundColor: '#ffffff', useCORS: true }).then(canvas => {
+    const link = document.createElement('a');
+    const fname = `${window._currentLabel}學費單_${window._currentParentName}.png`;
+    link.download = fname;
+    link.href = canvas.toDataURL('image/png');
+    link.click();
+    btn.disabled = false;
+    btn.textContent = '📷 下載截圖';
+  });
+}
+
+renderList();
+</script>
+</body>
+</html>
