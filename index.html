@@ -1,0 +1,831 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>袁氏音樂教室｜學費單</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+<style>
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; background: #f0f4f8; min-height: 100vh; }
+
+/* Topbar */
+.topbar { background: #3a8fc7; color: white; padding: 14px 20px; display: flex; align-items: center; justify-content: space-between; position: sticky; top: 0; z-index: 100; box-shadow: 0 2px 8px rgba(58,143,199,0.2); }
+.topbar-left { display: flex; align-items: center; gap: 8px; }
+.topbar-clef { font-size: 26px; }
+.topbar-title { font-size: 16px; font-weight: 600; }
+.topbar-actions { display: flex; gap: 8px; }
+.topbar-btn { background: rgba(255,255,255,0.2); border: none; color: white; border-radius: 8px; padding: 6px 12px; font-size: 13px; cursor: pointer; }
+.topbar-btn:hover { background: rgba(255,255,255,0.3); }
+
+/* Controls */
+.controls { background: white; padding: 12px 20px; border-bottom: 1px solid #e0e8f0; display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+.controls label { font-size: 13px; color: #555; font-weight: 500; }
+.month-select { border: 1px solid #c5d8e8; border-radius: 8px; padding: 7px 12px; font-size: 14px; color: #2c3e50; background: white; outline: none; cursor: pointer; }
+.cal-btn { background: white; border: 1px solid #c5d8e8; border-radius: 8px; padding: 7px 14px; font-size: 13px; color: #3a8fc7; cursor: pointer; font-weight: 500; white-space: nowrap; }
+.cal-btn:hover { background: #f0f7fd; }
+.income-badge { margin-left: auto; background: #e8f4fd; color: #185fa5; border-radius: 8px; padding: 6px 14px; font-size: 13px; font-weight: 600; }
+
+/* Loading */
+.loading { text-align: center; padding: 3rem; color: #888; font-size: 14px; }
+
+/* Parent list */
+.parent-list { padding: 16px; display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 12px; }
+.parent-card { background: white; border-radius: 12px; border: 1px solid #dde8f0; padding: 14px 16px; box-shadow: 0 1px 4px rgba(58,143,199,0.06); }
+.parent-card-top { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 10px; }
+.pname { font-size: 15px; font-weight: 600; color: #1a2a3a; }
+.psub { font-size: 12px; color: #888; margin-top: 2px; }
+.pamount { font-size: 13px; color: #3a8fc7; font-weight: 600; margin-top: 4px; }
+.card-actions { display: flex; gap: 6px; align-items: center; flex-wrap: wrap; justify-content: flex-end; }
+.paid-toggle { font-size: 11px; border: 1px solid #ddd; border-radius: 20px; padding: 4px 10px; cursor: pointer; background: white; color: #888; white-space: nowrap; }
+.paid-toggle.paid { background: #eaf3de; border-color: #97c459; color: #3b6d11; }
+.notified-toggle { font-size: 11px; border: 1px solid #ddd; border-radius: 20px; padding: 4px 10px; cursor: pointer; background: white; color: #888; white-space: nowrap; }
+.notified-toggle.notified { background: #e8f4fd; border-color: #3a8fc7; color: #185fa5; }
+.gen-btn { background: #3a8fc7; color: white; border: none; border-radius: 8px; padding: 7px 14px; font-size: 13px; font-weight: 500; cursor: pointer; }
+.gen-btn:hover { background: #2d7ab5; }
+
+/* Section cards */
+.section-card { background: white; border-radius: 12px; border: 1px solid #dde8f0; padding: 14px 16px; margin-bottom: 12px; }
+.section-title { font-size: 12px; font-weight: 600; color: #888; letter-spacing: 0.06em; margin-bottom: 12px; text-transform: uppercase; }
+
+/* Edit view */
+.page-view { display: none; padding: 16px; max-width: 720px; margin: 0 auto; }
+.page-view.active { display: block; }
+.page-header { display: flex; align-items: center; gap: 10px; margin-bottom: 16px; }
+.back-btn { background: white; border: 1px solid #c5d8e8; border-radius: 8px; padding: 7px 14px; font-size: 13px; cursor: pointer; color: #333; }
+.back-btn:hover { background: #f0f4f8; }
+.page-title { font-size: 16px; font-weight: 600; color: #1a2a3a; }
+.page-sub { font-size: 13px; color: #888; }
+
+/* Lessons */
+.lesson-row { display: flex; align-items: center; gap: 10px; padding: 8px 0; border-bottom: 0.5px solid #f0f0f0; }
+.lesson-row:last-child { border-bottom: none; }
+.lesson-row input[type=checkbox] { width: 17px; height: 17px; accent-color: #3a8fc7; cursor: pointer; flex-shrink: 0; }
+.lesson-info { flex: 1; font-size: 13px; color: #333; }
+.lesson-info.off { text-decoration: line-through; color: #bbb; }
+.lesson-badge { font-size: 10px; background: #fff3cd; color: #856404; border-radius: 4px; padding: 1px 6px; margin-left: 6px; }
+.lesson-fee { font-size: 13px; font-weight: 600; color: #3a8fc7; white-space: nowrap; }
+.lesson-fee.off { color: #ccc; text-decoration: line-through; }
+
+/* Form inputs */
+.form-row { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; margin-bottom: 8px; }
+.form-row input, .form-row select { border: 1px solid #dde8f0; border-radius: 8px; padding: 7px 10px; font-size: 13px; background: white; color: #333; outline: none; }
+.form-row input:focus, .form-row select:focus { border-color: #3a8fc7; }
+.form-row input[type=date] { width: 145px; }
+.form-row input[type=text] { flex: 1; min-width: 120px; }
+.form-row input[type=number] { width: 90px; }
+.form-row select { flex: 1; min-width: 100px; }
+.add-btn { background: #3a8fc7; color: white; border: none; border-radius: 8px; padding: 7px 14px; font-size: 13px; cursor: pointer; white-space: nowrap; }
+.add-btn:hover { background: #2d7ab5; }
+.extra-row { display: flex; align-items: center; gap: 8px; padding: 7px 0; border-bottom: 0.5px solid #f0f0f0; }
+.extra-row:last-child { border-bottom: none; }
+.del-btn { background: none; border: none; color: #e24b4a; font-size: 15px; cursor: pointer; padding: 0 2px; }
+.notes-input { width: 100%; border: 1px solid #dde8f0; border-radius: 8px; padding: 8px 12px; font-size: 13px; color: #333; resize: vertical; min-height: 60px; outline: none; font-family: inherit; }
+.notes-input:focus { border-color: #3a8fc7; }
+.bank-info-display { font-size: 13px; color: #555; background: #f5f9fd; border-radius: 8px; padding: 10px 14px; line-height: 1.8; }
+.bank-edit-btn { font-size: 12px; color: #3a8fc7; background: none; border: none; cursor: pointer; margin-top: 8px; padding: 0; }
+.holiday-list { display: flex; flex-wrap: wrap; gap: 8px; }
+.holiday-tag { background: #fff3cd; color: #856404; border-radius: 6px; padding: 4px 10px; font-size: 12px; }
+
+.summary-bar { background: white; border-radius: 12px; border: 1px solid #dde8f0; padding: 12px 16px; margin-bottom: 12px; display: flex; justify-content: space-between; align-items: center; }
+.summary-label { font-size: 13px; color: #555; font-weight: 500; }
+.summary-amount { font-size: 22px; font-weight: 700; color: #0c447c; }
+.generate-btn { background: #3a8fc7; color: white; border: none; border-radius: 10px; padding: 12px; font-size: 15px; font-weight: 600; cursor: pointer; width: 100%; margin-bottom: 16px; }
+.generate-btn:hover { background: #2d7ab5; }
+
+/* Invoice */
+.inv-actions { display: flex; gap: 8px; margin-bottom: 14px; flex-wrap: wrap; }
+.screenshot-btn { background: #3a8fc7; color: white; border: none; border-radius: 8px; padding: 8px 16px; font-size: 13px; font-weight: 500; cursor: pointer; }
+.screenshot-btn:disabled { background: #aaa; cursor: not-allowed; }
+#invoiceCard { background: white; border-radius: 12px; overflow: hidden; border: 1px solid #dde8f0; box-shadow: 0 2px 12px rgba(58,143,199,0.1); }
+.inv-header { background: #3a8fc7; color: white; padding: 22px 26px; display: flex; justify-content: space-between; align-items: flex-start; }
+.inv-clef { font-size: 40px; line-height: 1; }
+.inv-title { font-size: 30px; font-weight: 700; letter-spacing: 0.1em; }
+.inv-subtitle { font-size: 12px; opacity: 0.85; margin-top: 4px; }
+.inv-body { padding: 22px 26px; background: white; }
+.inv-meta { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 20px; }
+.bill-to-label { font-size: 10px; color: #aaa; font-weight: 600; letter-spacing: 0.1em; }
+.bill-to-name { font-size: 18px; font-weight: 600; color: #1a2a3a; margin-top: 4px; }
+.total-due-label { font-size: 10px; color: #aaa; font-weight: 600; letter-spacing: 0.1em; text-align: right; }
+.total-due-amount { font-size: 24px; font-weight: 700; color: #3a8fc7; margin-top: 4px; text-align: right; }
+.inv-table { width: 100%; border-collapse: collapse; font-size: 13px; }
+.inv-table thead tr { background: #3a8fc7; }
+.inv-table thead th { padding: 10px 12px; text-align: left; font-weight: 500; font-size: 11px; letter-spacing: 0.05em; color: white; }
+.inv-table tbody tr:nth-child(even) { background: #f5f9fd; }
+.inv-table tbody td { padding: 10px 12px; color: #333; border-bottom: 0.5px solid #eee; }
+.inv-table tbody td.charges { color: #3a8fc7; font-weight: 600; }
+.inv-table tfoot td { padding: 11px 12px; }
+.inv-notes { margin-top: 16px; padding: 12px 14px; background: #f8fafc; border-left: 3px solid #3a8fc7; border-radius: 0 6px 6px 0; font-size: 12px; color: #555; line-height: 1.7; }
+.inv-bank { margin-top: 10px; padding: 12px 14px; background: #f0f9f4; border-left: 3px solid #3b6d11; border-radius: 0 6px 6px 0; font-size: 12px; color: #3b6d11; line-height: 1.8; }
+.inv-footer { background: #3a8fc7; color: rgba(255,255,255,0.9); text-align: center; padding: 13px; font-size: 12px; letter-spacing: 0.05em; }
+
+/* Manage students */
+.student-item { display: flex; align-items: center; justify-content: space-between; padding: 10px 0; border-bottom: 0.5px solid #f0f0f0; }
+.student-item:last-child { border-bottom: none; }
+.student-info { flex: 1; }
+.student-name { font-size: 14px; font-weight: 500; color: #1a2a3a; }
+.student-detail { font-size: 12px; color: #888; margin-top: 2px; }
+.student-paused { font-size: 10px; background: #fff3cd; color: #856404; border-radius: 4px; padding: 1px 6px; margin-left: 6px; }
+.student-actions { display: flex; gap: 6px; }
+.edit-student-btn { background: none; border: 1px solid #c5d8e8; border-radius: 6px; padding: 4px 10px; font-size: 12px; color: #3a8fc7; cursor: pointer; }
+.delete-student-btn { background: none; border: 1px solid #fcc; border-radius: 6px; padding: 4px 10px; font-size: 12px; color: #e24b4a; cursor: pointer; }
+.add-parent-btn { background: #3a8fc7; color: white; border: none; border-radius: 8px; padding: 10px 16px; font-size: 14px; font-weight: 500; cursor: pointer; width: 100%; margin-top: 8px; }
+.add-parent-btn:hover { background: #2d7ab5; }
+.parent-manage-card { background: white; border-radius: 12px; border: 1px solid #dde8f0; padding: 14px 16px; margin-bottom: 12px; }
+.parent-manage-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; }
+.parent-manage-name { font-size: 15px; font-weight: 600; color: #1a2a3a; }
+.weekday-names { font-size: 11px; color: #888; }
+.pause-btn { font-size: 11px; border: 1px solid #ddd; border-radius: 6px; padding: 3px 8px; cursor: pointer; background: white; color: #888; }
+.pause-btn.paused { background: #fff3cd; border-color: #f0c040; color: #856404; }
+
+/* Modal */
+.modal-overlay { display: none; position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.4); z-index: 200; align-items: center; justify-content: center; padding: 16px; }
+.modal-overlay.active { display: flex; }
+.modal { background: white; border-radius: 14px; padding: 24px; width: 100%; max-width: 440px; max-height: 90vh; overflow-y: auto; }
+.modal h3 { font-size: 16px; font-weight: 600; margin-bottom: 16px; color: #1a2a3a; }
+.modal-field { margin-bottom: 12px; }
+.modal-field label { display: block; font-size: 12px; color: #666; font-weight: 500; margin-bottom: 4px; }
+.modal-field input, .modal-field select, .modal-field textarea { width: 100%; border: 1px solid #dde8f0; border-radius: 8px; padding: 8px 12px; font-size: 14px; outline: none; font-family: inherit; color: #333; }
+.modal-field input:focus, .modal-field select:focus, .modal-field textarea:focus { border-color: #3a8fc7; }
+.modal-row { display: flex; gap: 8px; }
+.modal-row .modal-field { flex: 1; }
+.modal-actions { display: flex; gap: 8px; justify-content: flex-end; margin-top: 16px; }
+.modal-cancel { background: none; border: 1px solid #ddd; border-radius: 8px; padding: 8px 16px; font-size: 13px; cursor: pointer; color: #555; }
+.modal-save { background: #3a8fc7; color: white; border: none; border-radius: 8px; padding: 8px 20px; font-size: 13px; cursor: pointer; font-weight: 500; }
+.modal-delete { background: #e24b4a; color: white; border: none; border-radius: 8px; padding: 8px 16px; font-size: 13px; cursor: pointer; }
+.children-section { margin-top: 12px; border-top: 1px solid #f0f0f0; padding-top: 12px; }
+.child-row { background: #f5f9fd; border-radius: 8px; padding: 10px; margin-bottom: 8px; }
+.child-row-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; }
+.child-label { font-size: 12px; font-weight: 600; color: #555; }
+
+@media (max-width: 500px) {
+  .parent-list { grid-template-columns: 1fr; padding: 12px; }
+  .inv-header { padding: 16px 18px; }
+  .inv-clef { font-size: 30px; }
+  .inv-title { font-size: 22px; }
+  .inv-body { padding: 16px 14px; }
+  .inv-table thead th, .inv-table tbody td { padding: 8px 8px; font-size: 12px; }
+  .total-due-amount { font-size: 20px; }
+  .bill-to-name { font-size: 16px; }
+}
+</style>
+</head>
+<body>
+
+<div class="topbar">
+  <div class="topbar-left">
+    <span class="topbar-clef">𝄞</span>
+    <span class="topbar-title">袁氏音樂教室</span>
+  </div>
+  <div class="topbar-actions">
+    <button class="topbar-btn" onclick="showManage()">⚙️ 管理學生</button>
+  </div>
+</div>
+
+<div class="controls" id="controlsBar">
+  <label>月份</label>
+  <select class="month-select" id="monthSelect" onchange="renderList()"></select>
+  <button class="cal-btn" onclick="exportCalendar()">📅 行事曆</button>
+  <div class="income-badge" id="incomeBadge">載入中...</div>
+</div>
+
+<div id="mainView">
+  <div class="parent-list" id="parentList">
+    <div class="loading">載入學生資料中...</div>
+  </div>
+</div>
+
+<!-- Edit View -->
+<div class="page-view" id="editView">
+  <div class="page-header">
+    <button class="back-btn" onclick="showList()">← 返回</button>
+    <div>
+      <div class="page-title" id="editParentName"></div>
+      <div class="page-sub" id="editMonthLabel"></div>
+    </div>
+  </div>
+  <div class="section-card">
+    <div class="section-title">課堂明細（取消勾選即不計費）</div>
+    <div id="lessonList"></div>
+  </div>
+  <div class="section-card">
+    <div class="section-title">＋ 新增加課</div>
+    <div class="form-row">
+      <input type="date" id="addDate" />
+      <input type="text" id="addDesc" placeholder="說明（例：補課）" />
+      <input type="number" id="addFee" placeholder="金額" />
+      <button class="add-btn" onclick="addExtra()">新增</button>
+    </div>
+    <div id="extraList"></div>
+  </div>
+  <div class="section-card">
+    <div class="section-title">備註</div>
+    <textarea class="notes-input" id="notesInput" placeholder="例：請於月底前匯款，謝謝！"></textarea>
+  </div>
+  <div class="section-card">
+    <div class="section-title">匯款資訊</div>
+    <div class="bank-info-display" id="bankDisplay"></div>
+    <button class="bank-edit-btn" onclick="openBankModal()">✏️ 編輯匯款資訊</button>
+  </div>
+  <div class="section-card" id="holidaySection" style="display:none;">
+    <div class="section-title">⚠️ 本月國定假日</div>
+    <div class="holiday-list" id="holidayList"></div>
+    <div style="font-size:12px; color:#888; margin-top:8px;">若當天有課，記得取消勾選</div>
+  </div>
+  <div class="summary-bar">
+    <div class="summary-label">本月合計</div>
+    <div class="summary-amount" id="summaryAmt">—</div>
+  </div>
+  <button class="generate-btn" onclick="generateInvoice()">產生學費單 ↗</button>
+</div>
+
+<!-- Invoice View -->
+<div class="page-view" id="invoiceView">
+  <div class="inv-actions">
+    <button class="back-btn" onclick="showEdit()">← 返回編輯</button>
+    <button class="screenshot-btn" id="shotBtn" onclick="takeScreenshot()">📷 下載截圖</button>
+    <button class="back-btn" onclick="showList()">⌂ 回首頁</button>
+  </div>
+  <div id="invoiceCard">
+    <div class="inv-header">
+      <div class="inv-clef">𝄞</div>
+      <div class="inv-title-block">
+        <div class="inv-title">INVOICE</div>
+        <div class="inv-subtitle" id="invSubtitle"></div>
+      </div>
+    </div>
+    <div class="inv-body">
+      <div class="inv-meta">
+        <div><div class="bill-to-label">BILL TO</div><div class="bill-to-name" id="invBillTo"></div></div>
+        <div><div class="total-due-label">TOTAL DUE</div><div class="total-due-amount" id="invTotal"></div></div>
+      </div>
+      <table class="inv-table">
+        <thead><tr><th style="width:20%">Date</th><th>Description</th><th style="width:15%">Charges</th><th style="width:13%">Payments</th></tr></thead>
+        <tbody id="invRows"></tbody>
+        <tfoot><tr>
+          <td colspan="2" style="text-align:right; color:#666; font-weight:500;">Total</td>
+          <td style="color:#3a8fc7; font-weight:700;" id="invFoot"></td>
+          <td></td>
+        </tr></tfoot>
+      </table>
+      <div class="inv-notes" id="invNotes" style="display:none;"></div>
+      <div class="inv-bank" id="invBank" style="display:none;"></div>
+    </div>
+    <div class="inv-footer">袁氏音樂教室 &nbsp;｜&nbsp; Yuan Music Studio</div>
+  </div>
+</div>
+
+<!-- Manage View -->
+<div class="page-view" id="manageView">
+  <div class="page-header">
+    <button class="back-btn" onclick="showList()">← 返回</button>
+    <div class="page-title">管理學生</div>
+  </div>
+  <div id="manageList"></div>
+  <button class="add-parent-btn" onclick="openAddParentModal()">＋ 新增家長/學生</button>
+</div>
+
+<!-- Bank Modal -->
+<div class="modal-overlay" id="bankModal">
+  <div class="modal">
+    <h3>匯款資訊設定</h3>
+    <div class="modal-field"><label>銀行名稱</label><input type="text" id="bankName" placeholder="例：國泰銀行" /></div>
+    <div class="modal-field"><label>帳號</label><input type="text" id="bankAccount" placeholder="帳號" /></div>
+    <div class="modal-field"><label>戶名</label><input type="text" id="bankHolder" placeholder="戶名" /></div>
+    <div class="modal-field"><label>其他說明</label><textarea id="bankExtra" placeholder="例：Line Pay: 0912-345-678" rows="2"></textarea></div>
+    <div class="modal-actions">
+      <button class="modal-cancel" onclick="closeBankModal()">取消</button>
+      <button class="modal-save" onclick="saveBankInfo()">儲存</button>
+    </div>
+  </div>
+</div>
+
+<!-- Add/Edit Parent Modal -->
+<div class="modal-overlay" id="parentModal">
+  <div class="modal">
+    <h3 id="parentModalTitle">新增家長/學生</h3>
+    <div class="modal-field">
+      <label>家長稱呼（帳單顯示名稱）</label>
+      <input type="text" id="pmParentName" placeholder="例：彭喬妤媽媽" />
+    </div>
+    <div class="modal-field">
+      <label>每月堂數上限（選填，例如彭家最多4堂）</label>
+      <input type="number" id="pmMaxPerChild" placeholder="不填表示不限制" />
+    </div>
+    <div class="children-section">
+      <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px;">
+        <span style="font-size:13px; font-weight:600; color:#555;">學生課程</span>
+        <button class="add-btn" style="padding:4px 10px; font-size:12px;" onclick="addChildRow()">＋ 新增</button>
+      </div>
+      <div id="childrenRows"></div>
+    </div>
+    <div class="modal-actions">
+      <button class="modal-cancel" onclick="closeParentModal()">取消</button>
+      <button class="modal-delete" id="pmDeleteBtn" style="display:none;" onclick="deleteParent()">刪除</button>
+      <button class="modal-save" onclick="saveParent()">儲存</button>
+    </div>
+  </div>
+</div>
+
+<script>
+const WEEKDAYS = ['週日','週一','週二','週三','週四','週五','週六'];
+const TW_HOLIDAYS = {
+  '01-01':'元旦','02-28':'和平紀念日','04-04':'兒童節','04-05':'清明節',
+  '05-01':'勞動節','06-22':'端午節','09-29':'中秋節','10-10':'國慶日',
+};
+
+// Default data (will be overwritten by Firebase)
+const DEFAULT_PARENTS = [
+  { id: 'p0', parentName: '彭喬妤媽媽', maxPerChild: 4, children: [
+    { name: '彭 喬妤', weekday: 6, time: '11:30', duration: 50, fee: 1500 },
+    { name: '彭 舒妤', weekday: 6, time: '12:50', duration: 50, fee: 1500 },
+  ]},
+  { id: 'p1', parentName: '杉島安媽媽', children: [
+    { name: '杉島 安', weekday: 4, time: '15:15', duration: 100, fee: 2400 },
+  ]},
+  { id: 'p2', parentName: '劉瑞岡媽媽', children: [
+    { name: '劉 旺寶', weekday: 3, time: '13:00', duration: 50, fee: 1000 },
+    { name: '劉 小岡', weekday: 3, time: '14:00', duration: 50, fee: 1000 },
+  ]},
+  { id: 'p3', parentName: '黃愛凌媽媽', children: [
+    { name: '黃 愛凌', weekday: 6, time: '16:00', duration: 50, fee: 1200 },
+  ]},
+  { id: 'p4', parentName: 'Cheyne媽媽', children: [
+    { name: 'Lin Cheyne', weekday: 5, time: '17:00', duration: 50, fee: 1200 },
+  ]},
+  { id: 'p5', parentName: '弈凡媽媽', children: [
+    { name: '林 弈凡', weekday: 3, time: '17:30', duration: 50, fee: 900 },
+    { name: '林 昀潔', weekday: 3, time: '18:30', duration: 50, fee: 900, paused: true },
+  ]},
+  { id: 'p6', parentName: '名妤媽媽', children: [
+    { name: '鄭 名妤', weekday: 6, time: '10:30', duration: 50, fee: 800 },
+  ]},
+  { id: 'p7', parentName: '曹心綺', children: [
+    { name: '曹心綺', weekday: 1, time: '10:30', duration: 50, fee: 1200 },
+    { name: '曹心綺', weekday: 4, time: '10:30', duration: 50, fee: 1200 },
+  ]},
+];
+
+let parents = [];
+let paidStatus = {};
+let notifiedStatus = {};
+let bankInfo = { name: '', account: '', holder: '', extra: '' };
+let currentParentIdx = null;
+let currentLessons = [];
+let currentExtras = [];
+let db = null;
+let editingParentId = null;
+
+// ── Firebase ──
+async function initFirebase() {
+  const { initializeApp } = await import("https://www.gstatic.com/firebasejs/11.6.0/firebase-app.js");
+  const { getFirestore, doc, getDoc, setDoc } = await import("https://www.gstatic.com/firebasejs/11.6.0/firebase-firestore.js");
+
+  const app = initializeApp({
+    apiKey: "AIzaSyCSBOfNx6wv_bPBd2AzcV_uB9zxqqyjVvk",
+    authDomain: "yuan-music-invoice.firebaseapp.com",
+    projectId: "yuan-music-invoice",
+    storageBucket: "yuan-music-invoice.firebasestorage.app",
+    messagingSenderId: "130606396616",
+    appId: "1:130606396616:web:7d15f03b1a5e26c96321fd"
+  });
+
+  db = getFirestore(app);
+
+  try {
+    const snap = await getDoc(doc(db, "studio", "state"));
+    if (snap.exists()) {
+      const data = snap.data();
+      if (data.parents && data.parents.length > 0) parents = data.parents;
+      else parents = DEFAULT_PARENTS;
+      if (data.paid) paidStatus = data.paid;
+      if (data.notified) notifiedStatus = data.notified;
+      if (data.bank) bankInfo = data.bank;
+    } else {
+      parents = DEFAULT_PARENTS;
+      await saveAll();
+    }
+  } catch(e) {
+    console.log("Load error:", e);
+    parents = DEFAULT_PARENTS;
+  }
+
+  renderList();
+  renderBankDisplay();
+}
+
+async function saveAll() {
+  if (!db) return;
+  try {
+    const { getFirestore, doc, setDoc } = await import("https://www.gstatic.com/firebasejs/11.6.0/firebase-firestore.js");
+    await setDoc(doc(db, "studio", "state"), {
+      parents, paid: paidStatus, notified: notifiedStatus, bank: bankInfo
+    });
+  } catch(e) { console.log("Save error:", e); }
+}
+
+// ── Utils ──
+function getDays(year, month, jsWd) {
+  const days = [], d = new Date(year, month-1, 1);
+  while (d.getMonth() === month-1) { if (d.getDay() === jsWd) days.push(new Date(d)); d.setDate(d.getDate()+1); }
+  return days;
+}
+function formatDate(d) { return `${d.getFullYear()}/${String(d.getMonth()+1).padStart(2,'0')}/${String(d.getDate()).padStart(2,'0')}`; }
+function isHoliday(d) {
+  const key = `${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+  return TW_HOLIDAYS[key] || null;
+}
+function getYM() {
+  const [y,m] = document.getElementById('monthSelect').value.split('-').map(Number);
+  return { year: y, month: m };
+}
+function getMonthLabel() { const {year,month} = getYM(); return `${year}年${month}月`; }
+function genId() { return 'p' + Date.now(); }
+
+// ── Month selector (default = next month) ──
+function buildMonthOptions() {
+  const sel = document.getElementById('monthSelect');
+  const now = new Date();
+  // Start from next month
+  for (let i = 1; i <= 13; i++) {
+    const d = new Date(now.getFullYear(), now.getMonth() + i, 1);
+    const val = `${d.getFullYear()}-${d.getMonth()+1}`;
+    const label = `${d.getFullYear()}年${d.getMonth()+1}月`;
+    const opt = document.createElement('option');
+    opt.value = val; opt.textContent = label;
+    if (i === 1) opt.selected = true;
+    sel.appendChild(opt);
+  }
+}
+
+// ── Calc ──
+function calcTotal(parent, year, month) {
+  let t = 0;
+  for (const c of parent.children) {
+    if (c.paused) continue;
+    let days = getDays(year, month, c.weekday % 7);
+    if (parent.maxPerChild) days = days.slice(0, parent.maxPerChild);
+    t += days.length * c.fee;
+  }
+  return t;
+}
+
+function buildBaseLessons(parent, year, month) {
+  const lines = [];
+  for (const c of parent.children) {
+    if (c.paused) continue;
+    let days = getDays(year, month, c.weekday % 7);
+    if (parent.maxPerChild) days = days.slice(0, parent.maxPerChild);
+    for (const d of days) {
+      const hol = isHoliday(d);
+      lines.push({ date: formatDate(d), d, desc: `${c.time} (${c.duration} min) Lesson - ${c.name}`, fee: c.fee, active: true, holiday: hol });
+    }
+  }
+  return lines.sort((a,b) => a.d - b.d);
+}
+
+// ── Render list ──
+function renderList() {
+  const { year, month } = getYM();
+  let grand = 0;
+  const list = document.getElementById('parentList');
+  list.innerHTML = '';
+  if (parents.length === 0) {
+    list.innerHTML = '<div class="loading">尚無學生，請點右上角「管理學生」新增</div>';
+    document.getElementById('incomeBadge').textContent = '本月總收入：$0';
+    return;
+  }
+  parents.forEach((p, i) => {
+    const total = calcTotal(p, year, month);
+    grand += total;
+    const active = p.children.filter(c=>!c.paused).map(c=>c.name.trim().split(/\s+/).pop()).join('、');
+    const paused = p.children.filter(c=>c.paused).map(c=>c.name.trim().split(/\s+/).pop()).join('、');
+    const pkey = `${p.id}-${year}-${month}`;
+    const isPaid = paidStatus[pkey] || false;
+    const isNotified = notifiedStatus[pkey] || false;
+    const card = document.createElement('div');
+    card.className = 'parent-card';
+    card.innerHTML = `
+      <div class="parent-card-top">
+        <div>
+          <div class="pname">${p.parentName}</div>
+          <div class="psub">${active}${paused ? '（暫停：'+paused+'）':''}</div>
+          <div class="pamount">$${total.toLocaleString()}</div>
+        </div>
+        <div class="card-actions">
+          <button class="notified-toggle ${isNotified?'notified':''}" onclick="toggleNotified(${i},event)">${isNotified?'✓ 已通知':'未通知'}</button>
+          <button class="paid-toggle ${isPaid?'paid':''}" onclick="togglePaid(${i},event)">${isPaid?'✓ 已收款':'未收款'}</button>
+          <button class="gen-btn" onclick="openEdit(${i})">編輯 ↗</button>
+        </div>
+      </div>`;
+    list.appendChild(card);
+  });
+  document.getElementById('incomeBadge').textContent = `本月總收入：$${grand.toLocaleString()}`;
+}
+
+function togglePaid(idx, e) {
+  e.stopPropagation();
+  const {year,month} = getYM();
+  const pkey = `${parents[idx].id}-${year}-${month}`;
+  paidStatus[pkey] = !paidStatus[pkey];
+  saveAll(); renderList();
+}
+function toggleNotified(idx, e) {
+  e.stopPropagation();
+  const {year,month} = getYM();
+  const pkey = `${parents[idx].id}-${year}-${month}`;
+  notifiedStatus[pkey] = !notifiedStatus[pkey];
+  saveAll(); renderList();
+}
+
+// ── Edit view ──
+function openEdit(idx) {
+  const {year,month} = getYM();
+  const p = parents[idx];
+  currentParentIdx = idx;
+  currentLessons = buildBaseLessons(p, year, month);
+  currentExtras = [];
+  document.getElementById('editParentName').textContent = p.parentName;
+  document.getElementById('editMonthLabel').textContent = getMonthLabel();
+  document.getElementById('addFee').value = p.children.find(c=>!c.paused)?.fee || '';
+  document.getElementById('notesInput').value = '';
+  document.getElementById('addDate').value = '';
+  document.getElementById('addDesc').value = '';
+  renderLessons(); renderExtras(); updateSummary(); renderBankDisplay(); renderHolidays(year,month);
+  showPage('editView');
+}
+
+function renderLessons() {
+  const el = document.getElementById('lessonList'); el.innerHTML = '';
+  currentLessons.forEach((ln,i) => {
+    const row = document.createElement('div'); row.className = 'lesson-row';
+    row.innerHTML = `<input type="checkbox" ${ln.active?'checked':''} onchange="toggleLesson(${i},this.checked)" />
+      <div class="lesson-info${ln.active?'':' off'}">${ln.date} &nbsp;${ln.desc}${ln.holiday?`<span class="lesson-badge">假日：${ln.holiday}</span>`:''}</div>
+      <div class="lesson-fee${ln.active?'':' off'}">$${ln.fee.toLocaleString()}</div>`;
+    el.appendChild(row);
+  });
+}
+function toggleLesson(i,checked) { currentLessons[i].active=checked; renderLessons(); updateSummary(); }
+
+function addExtra() {
+  const dateVal=document.getElementById('addDate').value;
+  const desc=document.getElementById('addDesc').value.trim();
+  const fee=parseInt(document.getElementById('addFee').value)||0;
+  if(!dateVal||!desc){alert('請填入日期和說明');return;}
+  const d=new Date(dateVal+'T00:00:00');
+  currentExtras.push({date:formatDate(d),d,desc,fee,active:true});
+  currentExtras.sort((a,b)=>a.d-b.d);
+  document.getElementById('addDate').value='';
+  document.getElementById('addDesc').value='';
+  renderExtras(); updateSummary();
+}
+function removeExtra(i){currentExtras.splice(i,1);renderExtras();updateSummary();}
+function renderExtras(){
+  const el=document.getElementById('extraList');el.innerHTML='';
+  currentExtras.forEach((ex,i)=>{
+    const row=document.createElement('div');row.className='extra-row';
+    row.innerHTML=`<div class="lesson-info" style="flex:1;">${ex.date} &nbsp;${ex.desc}</div><div class="lesson-fee">$${ex.fee.toLocaleString()}</div><button class="del-btn" onclick="removeExtra(${i})">✕</button>`;
+    el.appendChild(row);
+  });
+}
+function updateSummary(){
+  const total=currentLessons.filter(l=>l.active).reduce((s,l)=>s+l.fee,0)+currentExtras.reduce((s,e)=>s+e.fee,0);
+  document.getElementById('summaryAmt').textContent='$'+total.toLocaleString();
+}
+function renderHolidays(year,month){
+  const section=document.getElementById('holidaySection');
+  const list=document.getElementById('holidayList');list.innerHTML='';
+  const d=new Date(year,month-1,1);let found=[];
+  while(d.getMonth()===month-1){const h=isHoliday(d);if(h)found.push(`${formatDate(new Date(d))} ${h}`);d.setDate(d.getDate()+1);}
+  if(found.length>0){found.forEach(h=>{const tag=document.createElement('div');tag.className='holiday-tag';tag.textContent=h;list.appendChild(tag);});section.style.display='';}
+  else section.style.display='none';
+}
+
+// ── Bank ──
+function renderBankDisplay(){
+  const el=document.getElementById('bankDisplay');
+  if(!bankInfo.name&&!bankInfo.account){el.textContent='尚未設定匯款資訊';el.style.color='#bbb';return;}
+  el.style.color='#555';
+  let html='';
+  if(bankInfo.name)html+=`銀行：${bankInfo.name}<br>`;
+  if(bankInfo.account)html+=`帳號：${bankInfo.account}<br>`;
+  if(bankInfo.holder)html+=`戶名：${bankInfo.holder}<br>`;
+  if(bankInfo.extra)html+=bankInfo.extra;
+  el.innerHTML=html;
+}
+function openBankModal(){
+  document.getElementById('bankName').value=bankInfo.name;
+  document.getElementById('bankAccount').value=bankInfo.account;
+  document.getElementById('bankHolder').value=bankInfo.holder;
+  document.getElementById('bankExtra').value=bankInfo.extra;
+  document.getElementById('bankModal').className='modal-overlay active';
+}
+function closeBankModal(){document.getElementById('bankModal').className='modal-overlay';}
+function saveBankInfo(){
+  bankInfo.name=document.getElementById('bankName').value.trim();
+  bankInfo.account=document.getElementById('bankAccount').value.trim();
+  bankInfo.holder=document.getElementById('bankHolder').value.trim();
+  bankInfo.extra=document.getElementById('bankExtra').value.trim();
+  saveAll();closeBankModal();renderBankDisplay();
+}
+
+// ── Invoice ──
+function generateInvoice(){
+  const p=parents[currentParentIdx];
+  const allLines=[...currentLessons.filter(l=>l.active),...currentExtras].sort((a,b)=>a.d-b.d);
+  const total=allLines.reduce((s,l)=>s+l.fee,0);
+  const label=getMonthLabel();
+  document.getElementById('invSubtitle').textContent=`${label}  |  ${formatDate(new Date())}`;
+  document.getElementById('invBillTo').textContent=p.parentName;
+  document.getElementById('invTotal').textContent='$'+total.toLocaleString();
+  document.getElementById('invFoot').textContent='$'+total.toLocaleString();
+  const tbody=document.getElementById('invRows');tbody.innerHTML='';
+  for(const ln of allLines){const tr=document.createElement('tr');tr.innerHTML=`<td>${ln.date}</td><td>${ln.desc}</td><td class="charges">$${ln.fee.toLocaleString()}</td><td>—</td>`;tbody.appendChild(tr);}
+  const notes=document.getElementById('notesInput').value.trim();
+  const notesEl=document.getElementById('invNotes');
+  if(notes){notesEl.textContent=notes;notesEl.style.display='';}else{notesEl.style.display='none';}
+  const bankEl=document.getElementById('invBank');
+  if(bankInfo.name||bankInfo.account){let html='匯款資訊：<br>';if(bankInfo.name)html+=`銀行：${bankInfo.name}<br>`;if(bankInfo.account)html+=`帳號：${bankInfo.account}<br>`;if(bankInfo.holder)html+=`戶名：${bankInfo.holder}<br>`;if(bankInfo.extra)html+=bankInfo.extra;bankEl.innerHTML=html;bankEl.style.display='';}
+  else bankEl.style.display='none';
+  window._invoiceLabel=label;window._invoiceParent=p.parentName;
+  showPage('invoiceView');
+}
+
+function takeScreenshot(){
+  const btn=document.getElementById('shotBtn');btn.disabled=true;btn.textContent='處理中...';
+  html2canvas(document.getElementById('invoiceCard'),{scale:2,backgroundColor:'#ffffff',useCORS:true}).then(canvas=>{
+    const link=document.createElement('a');
+    link.download=`${window._invoiceLabel}學費單_${window._invoiceParent}.png`;
+    link.href=canvas.toDataURL('image/png');link.click();
+    btn.disabled=false;btn.textContent='📷 下載截圖';
+  });
+}
+
+// ── Calendar Export ──
+function exportCalendar(){
+  const {year,month}=getYM();const label=getMonthLabel();
+  let icsLines=['BEGIN:VCALENDAR','VERSION:2.0','PRODID:-//袁氏音樂教室//ZH','CALSCALE:GREGORIAN','METHOD:PUBLISH'];
+  for(const p of parents){
+    for(const c of p.children){
+      if(c.paused)continue;
+      let days=getDays(year,month,c.weekday%7);
+      if(p.maxPerChild)days=days.slice(0,p.maxPerChild);
+      for(const d of days){
+        const [h,m]=c.time.split(':').map(Number);
+        const startDt=new Date(d.getFullYear(),d.getMonth(),d.getDate(),h,m);
+        const endDt=new Date(startDt.getTime()+c.duration*60000);
+        const fmt=dt=>{const pad=n=>String(n).padStart(2,'0');return `${dt.getFullYear()}${pad(dt.getMonth()+1)}${pad(dt.getDate())}T${pad(dt.getHours())}${pad(dt.getMinutes())}00`;};
+        icsLines.push('BEGIN:VEVENT',`UID:yuan-${p.id}-${fmt(startDt)}@yuanmusic`,`DTSTART;TZID=Asia/Taipei:${fmt(startDt)}`,`DTEND;TZID=Asia/Taipei:${fmt(endDt)}`,`SUMMARY:🎵 ${c.name.trim()} 音樂課`,`DESCRIPTION:${p.parentName} | ${c.duration}分鐘課程`,'END:VEVENT');
+      }
+    }
+  }
+  icsLines.push('END:VCALENDAR');
+  const blob=new Blob([icsLines.join('\r\n')],{type:'text/calendar;charset=utf-8'});
+  const link=document.createElement('a');link.href=URL.createObjectURL(blob);link.download=`袁氏音樂教室_${label}.ics`;link.click();
+}
+
+// ── Manage Students ──
+function showManage(){
+  renderManage();showPage('manageView');
+}
+
+function renderManage(){
+  const el=document.getElementById('manageList');el.innerHTML='';
+  parents.forEach((p,pi)=>{
+    const card=document.createElement('div');card.className='parent-manage-card';
+    const childrenHtml=p.children.map((c,ci)=>`
+      <div class="student-item">
+        <div class="student-info">
+          <div class="student-name">${c.name}${c.paused?'<span class="student-paused">暫停中</span>':''}</div>
+          <div class="student-detail">${WEEKDAYS[c.weekday]} ${c.time} | ${c.duration}分鐘 | $${c.fee.toLocaleString()}/堂</div>
+        </div>
+        <div class="student-actions">
+          <button class="pause-btn ${c.paused?'paused':''}" onclick="togglePause(${pi},${ci})">${c.paused?'恢復上課':'暫停'}</button>
+        </div>
+      </div>`).join('');
+    card.innerHTML=`
+      <div class="parent-manage-header">
+        <div class="parent-manage-name">${p.parentName}${p.maxPerChild?` <span style="font-size:11px;color:#888;">（每月最多${p.maxPerChild}堂）</span>`:''}</div>
+        <button class="edit-student-btn" onclick="openEditParentModal(${pi})">✏️ 編輯</button>
+      </div>
+      ${childrenHtml}`;
+    el.appendChild(card);
+  });
+}
+
+function togglePause(pi,ci){
+  parents[pi].children[ci].paused=!parents[pi].children[ci].paused;
+  saveAll();renderManage();
+}
+
+// ── Add/Edit Parent Modal ──
+function openAddParentModal(){
+  editingParentId=null;
+  document.getElementById('parentModalTitle').textContent='新增家長/學生';
+  document.getElementById('pmParentName').value='';
+  document.getElementById('pmMaxPerChild').value='';
+  document.getElementById('pmDeleteBtn').style.display='none';
+  document.getElementById('childrenRows').innerHTML='';
+  addChildRow();
+  document.getElementById('parentModal').className='modal-overlay active';
+}
+
+function openEditParentModal(pi){
+  const p=parents[pi];
+  editingParentId=p.id;
+  document.getElementById('parentModalTitle').textContent='編輯家長/學生';
+  document.getElementById('pmParentName').value=p.parentName;
+  document.getElementById('pmMaxPerChild').value=p.maxPerChild||'';
+  document.getElementById('pmDeleteBtn').style.display='';
+  const rows=document.getElementById('childrenRows');rows.innerHTML='';
+  p.children.forEach(c=>addChildRow(c));
+  document.getElementById('parentModal').className='modal-overlay active';
+}
+
+function closeParentModal(){document.getElementById('parentModal').className='modal-overlay';}
+
+function addChildRow(c=null){
+  const rows=document.getElementById('childrenRows');
+  const idx=rows.children.length;
+  const div=document.createElement('div');div.className='child-row';
+  div.innerHTML=`
+    <div class="child-row-header">
+      <span class="child-label">學生 ${idx+1}</span>
+      <button class="del-btn" onclick="this.closest('.child-row').remove()">✕</button>
+    </div>
+    <div class="modal-field"><label>學生姓名</label><input type="text" class="cr-name" value="${c?c.name:''}" placeholder="例：彭 喬妤" /></div>
+    <div class="modal-row">
+      <div class="modal-field"><label>上課星期</label>
+        <select class="cr-weekday">
+          ${WEEKDAYS.map((w,i)=>`<option value="${i}" ${c&&c.weekday===i?'selected':''}>${w}</option>`).join('')}
+        </select>
+      </div>
+      <div class="modal-field"><label>時間</label><input type="time" class="cr-time" value="${c?c.time:''}" /></div>
+    </div>
+    <div class="modal-row">
+      <div class="modal-field"><label>時長（分鐘）</label><input type="number" class="cr-duration" value="${c?c.duration:50}" /></div>
+      <div class="modal-field"><label>費用/堂</label><input type="number" class="cr-fee" value="${c?c.fee:''}" /></div>
+    </div>`;
+  rows.appendChild(div);
+}
+
+function saveParent(){
+  const parentName=document.getElementById('pmParentName').value.trim();
+  if(!parentName){alert('請填入家長稱呼');return;}
+  const maxVal=document.getElementById('pmMaxPerChild').value;
+  const maxPerChild=maxVal?parseInt(maxVal):null;
+  const rows=document.getElementById('childrenRows').querySelectorAll('.child-row');
+  const children=[];
+  for(const row of rows){
+    const name=row.querySelector('.cr-name').value.trim();
+    const weekday=parseInt(row.querySelector('.cr-weekday').value);
+    const time=row.querySelector('.cr-time').value;
+    const duration=parseInt(row.querySelector('.cr-duration').value)||50;
+    const fee=parseInt(row.querySelector('.cr-fee').value)||0;
+    if(name&&time)children.push({name,weekday,time,duration,fee});
+  }
+  if(children.length===0){alert('請至少填入一位學生');return;}
+
+  if(editingParentId){
+    const idx=parents.findIndex(p=>p.id===editingParentId);
+    if(idx>=0){
+      const existing=parents[idx];
+      parents[idx]={...existing,parentName,maxPerChild,children:children.map((c,i)=>({...c,paused:existing.children[i]?.paused||false}))};
+    }
+  } else {
+    parents.push({id:genId(),parentName,maxPerChild,children:children.map(c=>({...c,paused:false}))});
+  }
+  saveAll();closeParentModal();renderManage();renderList();
+}
+
+function deleteParent(){
+  if(!confirm('確定要刪除這個家長的所有資料嗎？'))return;
+  parents=parents.filter(p=>p.id!==editingParentId);
+  saveAll();closeParentModal();renderManage();renderList();
+}
+
+// ── Navigation ──
+function showPage(id){
+  ['mainView','editView','invoiceView','manageView'].forEach(v=>{
+    const el=document.getElementById(v);
+    if(el)el.style.display=(v===id||v==='mainView'&&id==='mainView')?'':'none';
+  });
+  if(id==='mainView'){
+    document.getElementById('mainView').style.display='';
+    document.getElementById('controlsBar').style.display='';
+  } else {
+    document.getElementById('controlsBar').style.display='none';
+    document.getElementById('mainView').style.display='none';
+    document.getElementById(id).style.display='block';
+  }
+  window.scrollTo(0,0);
+}
+function showList(){document.getElementById('controlsBar').style.display='';document.getElementById('mainView').style.display='';['editView','invoiceView','manageView'].forEach(v=>{const el=document.getElementById(v);if(el)el.style.display='none';});renderList();window.scrollTo(0,0);}
+function showEdit(){showPage('editView');}
+
+// ── Init ──
+buildMonthOptions();
+initFirebase();
+</script>
+</body>
+</html>
